@@ -76,8 +76,10 @@ function initProject(cmd) {
     log.info('Create .eslintrc.json ...');
     fs.copyFileSync(__dirname + '/.eslintrc.json', './.eslintrc.json');
 
-    log.warn('\nRemember modify the `package.json` file!');
-    log.success('Done! Your project is ready to rock!');
+    log.warn('\nRemember to modify the `package.json` file!');
+    log.success('----------------------------------------');
+    log.success('  Done! Your project is ready to rock!  ');
+    log.success('----------------------------------------');
     log.info('Please run `npm install` first.');
     log.info('Run `s9tool dev` to development.');
     log.info('Run `s9tool build` to build your project.');
