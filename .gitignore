@@ -83,8 +83,5 @@ docs
 .vscode
 jsconfig.json
 
-# source
-src
-
 # Build
 build

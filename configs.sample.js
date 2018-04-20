@@ -3,7 +3,7 @@ const path = require('path');
 const webpack = [
     {
         entry: {
-            entry: path.join(__dirname, 'src/views/entry.js'),
+            entry: path.join(__dirname, 'src/views/assets/entry.js'),
         },
         output: {
             path: path.resolve(__dirname, 'build/assets/js'),
@@ -17,7 +17,7 @@ const template = {
     output: './build/views',
     files: [
         {
-            name: 'index', file: 'page.njk',
+            name: 'index', file: 'index.njk',
             render: {
                 message: 'Yooo',
                 title: 'Hello!'

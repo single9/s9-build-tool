@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const nunjucks = require('nunjucks');
+const log = require('./log');
 
 class NunjucksLib {
     constructor (opts={}) {
@@ -32,7 +33,7 @@ class NunjucksLib {
 
     recursiveWatch (path) {
         fs.readdir(path, (err, files) => {
-            if (err) return console.error(err);
+            if (err) return log.error(err);
 
             files.forEach((file) => {
                 let target = path + '/' + file;
@@ -40,7 +41,7 @@ class NunjucksLib {
                 fs.stat(target, (err, stats) => {
                     if (!stats.isDirectory()) {
                         fs.watchFile(target, () => {
-                            console.log(target, 'has changed!');
+                            log.warn(target, 'has changed!');
                             this.run();
                         });
                     } else {
@@ -55,14 +56,14 @@ class NunjucksLib {
 
         this.njk.render(tplFile.file, tplFile.render, (err, res) => {
 
-            if (err) return console.error(err);
+            if (err) return log.error(err);
 
             let fileName = tplFile.name + '.html';
             let filePath = path.join(this.outdir, fileName);
         
             fs.writeFile(filePath, res, (err) => {
-                if (err) console.error(err);
-                console.log('Write ' + fileName + ' Done!');
+                if (err) log.error(err);
+                log.success('Write ' + fileName + ' Done!');
             });
         });
     }

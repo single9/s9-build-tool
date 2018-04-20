@@ -1,0 +1,17 @@
+@h-fontweight: 500;
+
+.generate-h(@n, @init: 2.5rem){
+    h1 {
+      font-size: @init;
+      font-weight: @h-fontweight;
+    }
+    .generate-h2(@n);
+}
+
+.generate-h2(@n, @i: 2, @prev: 2rem) when (@i =< @n) {
+    h@{i} {
+      font-size: @prev;
+      font-weight: @h-fontweight;
+    }
+    .generate-h2(@n, (@i + 1), @prev - 0.25);
+}

@@ -28,7 +28,8 @@ program.version(pack.version);
 
 program.command('init')
     .description('Initialize the project.')
-    .action(() => initProject());
+    .option('-f, --force', 'Force run.')
+    .action((cmd) => initProject(cmd));
 
 program.command('dev')
     .description('Development mode.')
@@ -50,21 +51,36 @@ function outputHelp() {
     process.exit();
 }
 
-function initProject() {
-    log.info('Create source folders.');
+function initProject(cmd) {
 
-    fs.mkdirsSync('./src/server');
-    fs.mkdirsSync('./src/views');
-    fs.mkdirsSync('./src/views/njk');
-    fs.mkdirsSync('./src/views/assets');
+    const check = fs.existsSync('./src');
+
+    if (check && !cmd.force) {
+        log.error('The `src` folder has already existed.');
+        log.error('Use -f option to force run.');
+        return;
+    }
+
+    log.info('Create source folders.');
+    fs.copySync(__dirname + '/src', './src');
 
     log.info('Create configs file.');
     fs.copyFileSync(__dirname + '/configs.sample.js', './configs.js');
 
-    log.info('Create .gitignore file.');
+    log.info('Create package.json ...');
+    fs.copyFileSync(__dirname + '/package.sample.json', './package.json');
+
+    log.info('Create .gitignore ...');
     fs.copyFileSync(__dirname + '/gitignore.sample', './.gitignore');
 
+    log.info('Create .eslintrc.json ...');
+    fs.copyFileSync(__dirname + '/.eslintrc.json', './.eslintrc.json');
+
+    log.warn('\nRemember modify the `package.json` file!');
     log.success('Done! Your project is ready to rock!');
+    log.info('Please run `npm install` first.');
+    log.info('Run `s9tool dev` to development.');
+    log.info('Run `s9tool build` to build your project.');
 }
 
 async function runDev() {
@@ -101,10 +117,10 @@ async function runDev() {
     webpack({production: false}).watch();
 }
 
-async function build() {
+async function build(outDir=undefined) {
     let root = '.';
     let src = root + '/' + configs.rootDir;
-    let dest = root + '/' + configs.outDir;
+    let dest = root + '/' + (outDir || configs.outDir);
     
     log.info('Remove `build` dir.');
     await fs.remove(dest);
