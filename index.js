@@ -132,6 +132,8 @@ function initProject(cmd) {
 }
 
 async function build(outDir=undefined) {
+    process.env.NODE_ENV = 'production';
+    
     const root = '.';
     const src = root + '/' + configs.rootDir;
     const dest = root + '/' + (outDir || configs.outDir);

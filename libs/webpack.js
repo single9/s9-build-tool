@@ -4,6 +4,7 @@ const WebpackHotMiddleware = require('webpack-hot-middleware');
 // const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const log = require('./log');
 const wait = require('./utils').wait;
 
@@ -60,15 +61,29 @@ function genConfigs (configs) {
             format: 'Build [:bar] :percent (:elapsed seconds)',
             clear: false,
         }),
-        new webpack.HotModuleReplacementPlugin(),
-        new webpack.NamedModulesPlugin(),
         new MiniCssExtractPlugin({
-            // Options similar to the same options in webpackOptions.output
-            // both options are optional
             filename: '../css/[name].css',
             chunkFilename: '../css/[id].css'
         })
     ]);
+
+    if(devMode) {
+        config.plugins = config.plugins.concat([
+            new webpack.HotModuleReplacementPlugin(),
+            new webpack.NamedModulesPlugin(),
+        ]);
+
+        for (let e in config.entry) {
+            if (typeof(config.entry[e].push) === 'undefined') continue;
+            config.entry[e].push(__dirname + '/../node_modules/webpack-hot-middleware/client?path=/__webpack_hmr&timeout=2000&heartbeat=1000&reload=true');
+        }
+    } else {
+        config.optimization = {
+            minimizer: [
+              new OptimizeCSSAssetsPlugin({})
+            ]
+        };
+    }
 
     return config;
 }
@@ -79,12 +94,6 @@ function genConfigs (configs) {
  * @param {object} configs 
  */
 function configsHelper (configs) {
-
-    for (let e in configs.entry) {
-        if (typeof(configs.entry[e].push) === 'undefined') continue;
-        configs.entry[e].push(__dirname + '/../node_modules/webpack-hot-middleware/client?path=/__webpack_hmr&timeout=2000&heartbeat=1000&reload=true');
-    }
-
     return {
         entry: configs.entry,
         output: configs.output,
@@ -93,7 +102,7 @@ function configsHelper (configs) {
         /** @type Array */
         plugins: configs.plugins || [],
         /** @type String */
-        mode: configs.mode || process.env.NODE_ENV || 'development',
+        mode: process.env.NODE_ENV || configs.mode || 'development',
     };
 }
 
