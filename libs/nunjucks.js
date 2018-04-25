@@ -1,4 +1,5 @@
 const fs = require('fs');
+const chokidar = require('chokidar');
 const path = require('path');
 const events = require('events');
 const nunjucks = require('nunjucks');
@@ -35,23 +36,11 @@ class NunjucksLib extends events {
     }
 
     recursiveWatch (path) {
-        fs.readdir(path, (err, files) => {
-            if (err) return log.error(err);
+        let watcher = chokidar.watch(path);
 
-            files.forEach((file) => {
-                let target = path + '/' + file;
-
-                fs.stat(target, (err, stats) => {
-                    if (!stats.isDirectory()) {
-                        fs.watchFile(target, () => {
-                            log.warn(target + ' has changed!');
-                            this.run();
-                        });
-                    } else {
-                        this.recursiveWatch(target);
-                    }
-                });
-            });
+        watcher.on('change', (path) => {
+            log.warn(path + ' has changed!');
+            this.run();
         });
     }
 
@@ -86,7 +75,7 @@ class NunjucksLib extends events {
             }
         }
     }
-    
+
     /**
      * Send Message
      * 
