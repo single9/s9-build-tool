@@ -183,23 +183,10 @@ class WebpackLib {
 
                     this.server.use(this.webpackDevMiddleware);
                     this.server.use(this.webpackHotMiddleware);
-
-                    // Wait 2 seconds (timeout) and then notify client to reload page.
-                    wait(2).then(() => {
-                        this.webpackHotMiddleware.publish({
-                            name: 'server',
-                            action: 'sync',
-                            time: 0,
-                            hash: 'wqwodihaofaoefa',
-                            warnings: [],
-                            errors: [],
-                        });
-                    });
                 });
             }
             
             this.compliers.push( compiler );
-
         }
     }
 

@@ -3,6 +3,7 @@ const chokidar = require('chokidar');
 const path = require('path');
 const events = require('events');
 const nunjucks = require('nunjucks');
+
 const log = require('./log');
 
 class NunjucksLib extends events {
@@ -10,6 +11,7 @@ class NunjucksLib extends events {
         super();
 
         const tplConfig = this.tplConfig = require(process.cwd() + '/configs').template;
+        this.files = {};
 
         this.src = tplConfig.src;
         this.outdir = tplConfig.output;
@@ -31,6 +33,7 @@ class NunjucksLib extends events {
         let tplFiles = this.tplConfig.files;
         for (let i=0; i<tplFiles.length; i++) {
             let tplFile = tplFiles[i];
+            this.files[tplFiles.file] = tplFile;
             this.renderFile(tplFile);
         }
     }
@@ -38,9 +41,10 @@ class NunjucksLib extends events {
     recursiveWatch (path) {
         let watcher = chokidar.watch(path);
 
-        watcher.on('change', (path) => {
+        watcher.on('change', async (path) => {
             log.warn(path + ' has changed!');
             this.run();
+            this.sendMessage({fileName: path});
         });
     }
 
@@ -54,7 +58,7 @@ class NunjucksLib extends events {
             let filePath = path.join(this.outdir, fileName);
         
             fs.writeFile(filePath, res, (err) => {
-                this.sendMessage({err, fileName});
+                // this.sendMessage({err, fileName});
             });
         });
     }

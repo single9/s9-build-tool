@@ -4,9 +4,11 @@ const wait = require('./libs/utils').wait;
 const nunjucks = require('./libs/nunjucks');
 const webpack = require('./libs/webpack');
 
+const PORT = process.env.PORT || 3000;
+
 let _webpack;
 
-function development () {
+async function development () {
     process.env.NODE_ENV = 'development';
     
     // start server
@@ -14,6 +16,8 @@ function development () {
     log.info('Server Started');
 
     _webpack = webpack({production: false, server: dev});
+
+    dev.listen(PORT);
     
     let njk = nunjucks({watch: true});
 
@@ -25,10 +29,8 @@ function development () {
 
         log.success('Write ' + fileName + ' Done!');
 
-        _webpack.reload(1);
+        process.send('reload');
     });
-
-    dev.listen(process.env.PORT || 3000);
 }
 
 function runApp() {
@@ -37,25 +39,25 @@ function runApp() {
 
 // process.stdin.resume();//so the program will not close instantly
 
-async function exitHandler(options, err) {
-    if (options.cleanup) {
-        _webpack.sendServerBuildingMessage();
-        await wait(1);
-    }
-    if (err) console.log(err.stack);
-    if (options.exit) process.exit();
-}
-
-//do something when app is closing
-process.on('exit', exitHandler.bind(null,{cleanup:true}));
-
-//catches ctrl+c event
-process.on('SIGINT', exitHandler.bind(null, {cleanup:true, exit:true}));
-
 if (module.parent) {
     module.exports = development;
 } else {
     (function () {
         development();
+
+        async function exitHandler(options, err) {
+            if (options.cleanup) {
+                _webpack.sendServerBuildingMessage();
+                await wait(1);
+            }
+            if (err) console.log(err.stack);
+            if (options.exit) process.exit();
+        }
+        
+        //do something when app is closing
+        process.on('exit', exitHandler.bind(null,{cleanup:true}));
+        
+        //catches ctrl+c event
+        process.on('SIGINT', exitHandler.bind(null, {cleanup:true, exit:true}));
     })();
 }

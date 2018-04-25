@@ -50,7 +50,13 @@ program.command('dev')
                 silent: false
             });
 
-            instance.on('message', log.info);
+            instance.on('message', (msg) => {
+                if (msg === 'reload') {
+                    return wait(1).then(() => require('./libs/browser-sync').reload());
+                }
+
+                log.info(msg);
+            });
 
             instance.on('close', (code) => {
                 if (code === 232) process.exit();
@@ -77,8 +83,14 @@ program.command('dev')
             
             log.success('The dev server is restarted.');
 
+            await wait(1);
+            require('./libs/browser-sync').reload();
+
             isChange = false;
         });
+
+        await wait(1);
+        require('./libs/browser-sync');
     });
 
 program.command('build')
