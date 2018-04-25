@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs-extra');
+const chokidar = require('chokidar');
 const program = require('commander');
 const child = require('child_process');
 const log = require('./libs/log');
@@ -58,27 +59,25 @@ program.command('dev')
             return instance;
         }
 
-        fs.watch(process.cwd() + '/' + serverDir, {
-            recursive: true
-        }, async (event, filename) => {
-            if (ignore.indexOf(filename) > -1) return;
-            if (event === 'change' && isChange === false) {
-                isChange = true;
+        let watcher = chokidar.watch(process.cwd() + '/' + serverDir);
 
-                log.warn(filename + ' changed.');
-                // Kill server
-                log.warn('Kill old dev server and restart after 2000 milliseconds');
-                let isKill = await devServer.kill('SIGINT');
+        watcher.on('change', async (filename) => {
+            isChange = true;
 
-                if (isKill) log.success('Server killed.');
-                else return log.error('Server failed to kill.');
-                // restart server
-                await wait(2);
-                devServer = server();
-                
-                log.success('The dev server is restarted.');
-                isChange = false;
-            }
+            log.warn(filename + ' changed.');
+            // Kill server
+            log.warn('Kill old dev server and restart after 2000 milliseconds');
+            let isKill = await devServer.kill('SIGINT');
+
+            if (isKill) log.success('Server killed.');
+            else return log.error('Server failed to kill.');
+            // restart server
+            await wait(2);
+            devServer = server();
+            
+            log.success('The dev server is restarted.');
+
+            isChange = false;
         });
     });
 
