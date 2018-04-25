@@ -4,16 +4,13 @@ const fs = require('fs-extra');
 const program = require('commander');
 const child = require('child_process');
 const log = require('./libs/log');
+const wait = require('./libs/utils').wait;
 
 const nunjucks = require('./libs/nunjucks');
 const webpack = require('./libs/webpack');
 
 const pack = require('./package.json');
 const configs = require('./project.json') || pack.project;
-
-process.env.DEV = true;
-process.env.VIEW_PATH = __dirname + '/build/';
-process.env.PACKAGE_FILE_PATH = __dirname + '/package.json';
 
 const serverDir = configs.rootDir;
 let ignore = ['.git', /node_modules/, /desktop/];
@@ -24,6 +21,10 @@ if (configs.ignore) {
 
 let isChange = false;
 
+process.env.DEV = true;
+process.env.VIEW_PATH = __dirname + '/build/';
+process.env.PACKAGE_FILE_PATH = __dirname + '/package.json';
+
 program.version(pack.version);
 
 program.command('init')
@@ -33,7 +34,53 @@ program.command('init')
 
 program.command('dev')
     .description('Development mode.')
-    .action(() => runDev());
+    .action(async () => {
+        const root = '.';
+        const dest = root + '/' + configs.outDir || '';
+
+        log.info('Remove `build` dir.');
+        await fs.remove(dest);
+
+        let devServer = server();
+
+        function server () {
+            const argv = [];
+            const instance = child.fork(__dirname + '/development.js', argv, {
+                silent: false
+            });
+
+            instance.on('message', log.info);
+
+            instance.on('close', (code) => {
+                if (code === 232) process.exit();
+            });
+
+            return instance;
+        }
+
+        fs.watch(process.cwd() + '/' + serverDir, {
+            recursive: true
+        }, async (event, filename) => {
+            if (ignore.indexOf(filename) > -1) return;
+            if (event === 'change' && isChange === false) {
+                isChange = true;
+
+                log.warn(filename + ' changed.');
+                // Kill server
+                log.warn('Kill old dev server and restart after 2000 milliseconds');
+                let isKill = await devServer.kill('SIGINT');
+
+                if (isKill) log.success('Server killed.');
+                else return log.error('Server failed to kill.');
+                // restart server
+                await wait(2);
+                devServer = server();
+                
+                log.success('The dev server is restarted.');
+                isChange = false;
+            }
+        });
+    });
 
 program.command('build')
     .description('Build project.')
@@ -85,44 +132,10 @@ function initProject(cmd) {
     log.info('Run `s9tool build` to build your project.');
 }
 
-async function runDev() {
-    process.env.NODE_ENV = 'development';
-    
-    // start server
-    let dev = runApp();
-    log.info('Server Started');
-    // watch all source files
-    fs.watch(process.cwd() + '/' + serverDir, {
-        recursive: true
-    }, async (event, filename) => {
-        if (ignore.indexOf(filename) > -1) return;
-        if (event === 'change' && isChange === false) {
-            isChange = true;
-
-            log.warn(filename + ' changed.');
-            // Kill server
-            log.warn('Kill old dev server and restart after 500 milliseconds');
-            await dev.kill('SIGINT');
-            // restart server
-            let re = setTimeout(() => {
-                dev = runApp();
-
-                log.success('The dev server is restarted.');
-
-                isChange = false;
-                clearTimeout(re);
-            }, 500);
-        }
-    });
-
-    nunjucks({watch: true});
-    webpack({production: false}).watch();
-}
-
 async function build(outDir=undefined) {
-    let root = '.';
-    let src = root + '/' + configs.rootDir;
-    let dest = root + '/' + (outDir || configs.outDir);
+    const root = '.';
+    const src = root + '/' + configs.rootDir;
+    const dest = root + '/' + (outDir || configs.outDir);
     
     log.info('Remove `build` dir.');
     await fs.remove(dest);
@@ -141,28 +154,4 @@ async function build(outDir=undefined) {
 
     nunjucks({watch: false});
     webpack({production: true}).build();
-}
-
-function wait (seconds=1) {
-    return new Promise((resolve) => {
-        let st = setTimeout(() => {
-            clearTimeout(st);
-            resolve(true);
-        }, seconds * 1000);
-    });
-}
-
-function runApp() {
-    const argv = [];
-    const run = child.fork(process.cwd() + '/src/server/index.js', argv, {
-        silent: false
-    });
-
-    run.on('message', log.info);
-
-    run.on('close', (code) => {
-        if (code === 232) process.exit();
-    });
-
-    return run;
 }

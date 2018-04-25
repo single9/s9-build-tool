@@ -3,7 +3,9 @@ const path = require('path');
 const webpack = [
     {
         entry: {
-            entry: path.join(__dirname, 'src/views/assets/entry.js'),
+            entry: [
+                path.join(__dirname, 'src/views/assets/entry.js')
+            ]
         },
         output: {
             path: path.resolve(__dirname, 'build/assets/js'),

@@ -19,15 +19,24 @@
     "commander": "^2.15.1",
     "css-loader": "^0.28.11",
     "dateformat": "^3.0.3",
-    "express": "^4.16.3",
     "extract-text-webpack-plugin": "^4.0.0-beta.0",
     "fs-extra": "^5.0.0",
+    "less": "^3.0.2",
     "less-loader": "^4.1.0",
+    "mini-css-extract-plugin": "^0.4.0",
     "nunjucks": "^3.1.2",
+    "progress-bar-webpack-plugin": "^1.11.0",
     "style-loader": "^0.20.3",
     "url-loader": "^1.0.1",
     "vue-loader": "^14.2.2",
     "vue-template-compiler": "^2.5.16",
-    "webpack": "^4.6.0"
+    "webpack": "^4.6.0",
+    "webpack-dev-middleware": "^3.1.2",
+    "webpack-hot-middleware": "^2.22.1"
+  },
+  "devDependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.3",
+    "helmet": "^3.12.0"
   }
 }

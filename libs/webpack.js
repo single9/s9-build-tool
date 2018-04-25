@@ -1,13 +1,16 @@
 const webpack = require('webpack');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const WebpackDevMiddleware = require('webpack-dev-middleware');
+const WebpackHotMiddleware = require('webpack-hot-middleware');
+// const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const log = require('./log');
+const wait = require('./utils').wait;
 
 function genConfigs (configs) {
-    const extractLESS = new ExtractTextPlugin({
-        filename: '../css/[name].css',
-    });
-
+    
     let config = configsHelper(configs);
+    const devMode = config.mode !== 'production';
 
     config.module = {
         rules: [
@@ -37,10 +40,11 @@ function genConfigs (configs) {
             },
             {
                 test: /\.less$/,
-                use: extractLESS.extract({
-                    fallback: 'style-loader',
-                    use: ['css-loader', 'less-loader']
-                }),
+                use: [
+                    devMode? 'style-loader' : MiniCssExtractPlugin.loader,
+                    'css-loader',
+                    'less-loader'
+                ]
             }
         ]
     };
@@ -51,20 +55,44 @@ function genConfigs (configs) {
         }
     };
 
-    config.plugins = [
-        extractLESS
-    ];
+    config.plugins = config.plugins.concat([
+        new ProgressBarPlugin({
+            format: 'Build [:bar] :percent (:elapsed seconds)',
+            clear: false,
+        }),
+        new webpack.HotModuleReplacementPlugin(),
+        new webpack.NamedModulesPlugin(),
+        new MiniCssExtractPlugin({
+            // Options similar to the same options in webpackOptions.output
+            // both options are optional
+            filename: '../css/[name].css',
+            chunkFilename: '../css/[id].css'
+        })
+    ]);
 
     return config;
 }
 
+/**
+ * Configs Helper
+ * 
+ * @param {object} configs 
+ */
 function configsHelper (configs) {
+
+    for (let e in configs.entry) {
+        if (typeof(configs.entry[e].push) === 'undefined') continue;
+        configs.entry[e].push(__dirname + '/../node_modules/webpack-hot-middleware/client?path=/__webpack_hmr&timeout=2000&heartbeat=1000&reload=true');
+    }
+
     return {
         entry: configs.entry,
         output: configs.output,
         resolve: configs.resolve,
         module: configs.module,
+        /** @type Array */
         plugins: configs.plugins || [],
+        /** @type String */
         mode: configs.mode || process.env.NODE_ENV || 'development',
     };
 }
@@ -80,6 +108,7 @@ class WebpackLib {
         this.compliers = [];
         this.watchers = [];
         this.isProduction = opts.production || false;
+        this.server = opts.server || undefined;
 
         this.genCompilers();
     }
@@ -117,19 +146,59 @@ class WebpackLib {
     }
 
     genCompilers () {
+        this.compliers = [];
         const webpackConfig = require(process.cwd() + '/configs').webpack;
 
         for (let i=0; i<webpackConfig.length; i++) {
             
-            let config = genConfigs(webpackConfig[i]);
-
             if (this.isProduction) {
-                config.mode = 'production';
-                // handleWarnings('Run in production mode.');
+                webpackConfig[i].mode = 'production';
             }
 
-            this.compliers.push( webpack(config) );
+            let config = genConfigs(webpackConfig[i]);
+            let compiler = webpack(config);
+
+            if (this.server) {
+                compiler.run((err) => {
+                    if (err) {
+                        return log.error(err);
+                    }
+
+                    this.webpackDevMiddleware = WebpackDevMiddleware(compiler, {
+                        logLevel: 'warn',
+                        publicPath: config.output.publicPath,
+                        // writeToDisk: true
+                    });
+
+                    this.webpackHotMiddleware = WebpackHotMiddleware(compiler);
+
+                    this.server.use(this.webpackDevMiddleware);
+                    this.server.use(this.webpackHotMiddleware);
+
+                    // Wait 2 seconds (timeout) and then notify client to reload page.
+                    wait(2).then(() => {
+                        this.webpackHotMiddleware.publish({
+                            name: 'server',
+                            action: 'sync',
+                            time: 0,
+                            hash: 'wqwodihaofaoefa',
+                            warnings: [],
+                            errors: [],
+                        });
+                    });
+                });
+            }
+            
+            this.compliers.push( compiler );
+
         }
+    }
+
+    reload () {
+        this.webpackHotMiddleware.publish({
+            action: 'building',
+            name: 'server file',
+        });
     }
 
     /**
@@ -156,12 +225,18 @@ function webpackListener (err, stats) {
     if (jsonStats.warnings.length > 0)
         log.warn(jsonStats.warnings);
 
-    log.info(stats.toString({
-        chunks: false,  // Makes the build much quieter
-        colors: true    // Shows colors in the console
-    }) + '\n');
+    // log.info(stats.toString({
+    //     chunks: false,  // Makes the build much quieter
+    //     colors: true    // Shows colors in the console
+    // }) + '\n');
 }
-
-module.exports = function (build=false) {
-    return new WebpackLib(build);
+/**
+ * 
+ * 
+ * @param {object} [opts={}] 
+ * @param {boolean} [opts.production=false]   Production mode?
+ * @returns 
+ */
+module.exports = function (opts) {
+    return new WebpackLib(opts);
 };
