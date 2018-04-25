@@ -10,6 +10,7 @@ Installation
 -------------
 
     git clone https://github.com/single9/s9-build-tool.git
+    cd s9-build-tool
     npm link
 
 Usage
@@ -24,6 +25,11 @@ Usage
 ### Development
 
     s9tool dev
+
+> The devlopment server is listening on port 3000.
+
+    # change port
+    PORT=3333 s9tool dev
 
 ### Build
 
