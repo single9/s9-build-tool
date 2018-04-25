@@ -13,8 +13,20 @@ function development () {
     let dev = runApp();
     log.info('Server Started');
 
-    nunjucks({watch: true});
     _webpack = webpack({production: false, server: dev});
+    
+    let njk = nunjucks({watch: true});
+
+    njk.on('message', (msg) => {
+        let err = msg.err;
+        let fileName = msg.fileName;
+
+        if (err) log.error(fileName + '\n' + err);
+
+        log.success('Write ' + fileName + ' Done!');
+
+        _webpack.reload(1);
+    });
 
     dev.listen(process.env.PORT || 3000);
 }
@@ -27,7 +39,7 @@ function runApp() {
 
 async function exitHandler(options, err) {
     if (options.cleanup) {
-        _webpack.reload();
+        _webpack.sendServerBuildingMessage();
         await wait(1);
     }
     if (err) console.log(err.stack);

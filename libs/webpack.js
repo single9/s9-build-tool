@@ -194,7 +194,21 @@ class WebpackLib {
         }
     }
 
-    reload () {
+    reload (seconds=2) {
+        // Wait a few seconds and then notify client to reload page.
+        wait(seconds).then(() => {
+            this.webpackHotMiddleware.publish({
+                name: 'server',
+                action: 'sync',
+                time: 0,
+                hash: 'wqwodihaofaoefa',
+                warnings: [],
+                errors: [],
+            });
+        });
+    }
+
+    sendServerBuildingMessage () {
         this.webpackHotMiddleware.publish({
             action: 'building',
             name: 'server file',

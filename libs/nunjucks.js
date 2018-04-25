@@ -1,10 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const events = require('events');
 const nunjucks = require('nunjucks');
 const log = require('./log');
 
-class NunjucksLib {
+class NunjucksLib extends events {
     constructor (opts={}) {
+        super();
+
         const tplConfig = this.tplConfig = require(process.cwd() + '/configs').template;
 
         this.src = tplConfig.src;
@@ -41,7 +44,7 @@ class NunjucksLib {
                 fs.stat(target, (err, stats) => {
                     if (!stats.isDirectory()) {
                         fs.watchFile(target, () => {
-                            log.warn(target, 'has changed!');
+                            log.warn(target + ' has changed!');
                             this.run();
                         });
                     } else {
@@ -56,14 +59,13 @@ class NunjucksLib {
 
         this.njk.render(tplFile.file, tplFile.render, (err, res) => {
 
-            if (err) return log.error(err);
+            if (err) return this.sendMessage({err, fileName});
 
             let fileName = tplFile.name + '.html';
             let filePath = path.join(this.outdir, fileName);
         
             fs.writeFile(filePath, res, (err) => {
-                if (err) log.error(err);
-                log.success('Write ' + fileName + ' Done!');
+                this.sendMessage({err, fileName});
             });
         });
     }
@@ -83,6 +85,18 @@ class NunjucksLib {
                 fs.mkdirSync(dir);
             }
         }
+    }
+    
+    /**
+     * Send Message
+     * 
+     * @param {object} paylad 
+     * @param {any}    paylad.err       Errors
+     * @param {string} paylad.fileName  fileName
+     * @memberof NunjucksLib
+     */
+    sendMessage (paylad) {
+        this.emit('message', paylad);
     }
 }
 
