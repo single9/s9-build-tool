@@ -58,7 +58,7 @@ class NunjucksLib extends events {
             let filePath = path.join(this.outdir, fileName);
         
             fs.writeFile(filePath, res, (err) => {
-                // this.sendMessage({err, fileName});
+                if (err) this.sendMessage({err, fileName});
             });
         });
     }
