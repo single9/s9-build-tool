@@ -197,6 +197,8 @@ class WebpackLib {
     reload (seconds=2) {
         // Wait a few seconds and then notify client to reload page.
         wait(seconds).then(() => {
+            if (!this.webpackHotMiddleware) return;
+
             this.webpackHotMiddleware.publish({
                 name: 'server',
                 action: 'sync',
@@ -209,6 +211,8 @@ class WebpackLib {
     }
 
     sendServerBuildingMessage () {
+        if (!this.webpackHotMiddleware) return;
+        
         this.webpackHotMiddleware.publish({
             action: 'building',
             name: 'server file',
