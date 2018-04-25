@@ -30,6 +30,7 @@
     "optimize-css-assets-webpack-plugin": "^4.0.0",
     "progress-bar-webpack-plugin": "^1.11.0",
     "style-loader": "^0.20.3",
+    "uglifyjs-webpack-plugin": "^1.2.5",
     "url-loader": "^1.0.1",
     "vue-loader": "^14.2.2",
     "vue-template-compiler": "^2.5.16",

@@ -1,9 +1,9 @@
 const webpack = require('webpack');
 const WebpackDevMiddleware = require('webpack-dev-middleware');
 const WebpackHotMiddleware = require('webpack-hot-middleware');
-// const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const log = require('./log');
 const wait = require('./utils').wait;
@@ -80,7 +80,11 @@ function genConfigs (configs) {
     } else {
         config.optimization = {
             minimizer: [
-              new OptimizeCSSAssetsPlugin({})
+                new UglifyJsPlugin({
+                    cache: true,
+                    parallel: true
+                  }),
+                new OptimizeCSSAssetsPlugin({})
             ]
         };
     }
