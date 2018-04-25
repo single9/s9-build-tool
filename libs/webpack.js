@@ -3,7 +3,7 @@ const WebpackDevMiddleware = require('webpack-dev-middleware');
 const WebpackHotMiddleware = require('webpack-hot-middleware');
 const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const log = require('./log');
 const wait = require('./utils').wait;
@@ -117,13 +117,13 @@ class WebpackLib {
      * @param {boolean} [opts.production=false]   Production mode?
      * @memberof WebpackLib
      */
-    constructor (opts={}) {
+    constructor (opts={}, callback) {
         this.compliers = [];
         this.watchers = [];
         this.isProduction = opts.production || false;
         this.server = opts.server || undefined;
 
-        this.genCompilers();
+        this.genCompilers(callback);
     }
 
     watch () {
@@ -158,7 +158,7 @@ class WebpackLib {
         });
     }
 
-    genCompilers () {
+    genCompilers (callback) {
         this.compliers = [];
         const webpackConfig = require(process.cwd() + '/configs').webpack;
 
@@ -172,24 +172,23 @@ class WebpackLib {
             let compiler = webpack(config);
 
             if (this.server) {
+
                 compiler.run((err) => {
-                    if (err) {
-                        return log.error(err);
-                    }
 
                     this.webpackDevMiddleware = WebpackDevMiddleware(compiler, {
                         logLevel: 'warn',
-                        publicPath: config.output.publicPath,
-                        // writeToDisk: true
+                        publicPath: config.output.publicPath
                     });
-
+                    
                     this.webpackHotMiddleware = WebpackHotMiddleware(compiler);
 
                     this.server.use(this.webpackDevMiddleware);
                     this.server.use(this.webpackHotMiddleware);
+
+                    if(callback) callback(err);
                 });
             }
-            
+
             this.compliers.push( compiler );
         }
     }
@@ -255,6 +254,6 @@ function webpackListener (err, stats) {
  * @param {boolean} [opts.production=false]   Production mode?
  * @returns 
  */
-module.exports = function (opts) {
-    return new WebpackLib(opts);
+module.exports = function (opts, callback) {
+    return new WebpackLib(opts, callback);
 };

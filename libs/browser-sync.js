@@ -8,8 +8,8 @@ module.exports = (function () {
 
     bs.init({
         proxy: {
-            target: 'localhost:' + PORT, // can be [virtual host, sub-directory, localhost with port]
-            ws: true // enables websockets
+            target: 'localhost:' + PORT,
+            ws: true
         }
     });
 

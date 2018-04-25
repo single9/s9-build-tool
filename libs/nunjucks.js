@@ -11,14 +11,10 @@ class NunjucksLib extends events {
         super();
 
         const tplConfig = this.tplConfig = require(process.cwd() + '/configs').template;
-        this.files = {};
 
         this.src = tplConfig.src;
         this.outdir = tplConfig.output;
-        this.njk = new nunjucks.Environment(new nunjucks.FileSystemLoader(this.src, {
-            autoescape: false,
-            watch: opts.watch,
-        }));
+        this.njk = new nunjucks.Environment(new nunjucks.FileSystemLoader(this.src));
 
         if (opts.watch === true) {
             this.recursiveWatch(this.src);
@@ -33,7 +29,6 @@ class NunjucksLib extends events {
         let tplFiles = this.tplConfig.files;
         for (let i=0; i<tplFiles.length; i++) {
             let tplFile = tplFiles[i];
-            this.files[tplFiles.file] = tplFile;
             this.renderFile(tplFile);
         }
     }
@@ -41,7 +36,7 @@ class NunjucksLib extends events {
     recursiveWatch (path) {
         let watcher = chokidar.watch(path);
 
-        watcher.on('change', async (path) => {
+        watcher.on('change', (path) => {
             log.warn(path + ' has changed!');
             this.run();
             this.sendMessage({fileName: path});

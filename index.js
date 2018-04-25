@@ -14,13 +14,6 @@ const pack = require('./package.json');
 const configs = require('./project.json') || pack.project;
 
 const serverDir = configs.rootDir;
-let ignore = ['.git', /node_modules/, /desktop/];
-
-if (configs.ignore) {
-    ignore = ignore.concat(configs.ignore);
-}
-
-let isChange = false;
 
 process.env.DEV = true;
 process.env.VIEW_PATH = __dirname + '/build/';
@@ -29,12 +22,13 @@ process.env.PACKAGE_FILE_PATH = __dirname + '/package.json';
 program.version(pack.version);
 
 program.command('init')
-    .description('Initialize the project.')
-    .option('-f, --force', 'Force run.')
-    .action((cmd) => initProject(cmd));
+    .description('Initialize the project')
+    .option('-n, --name <name>', 'Project name')
+    .option('-f, --force', 'Force run')
+    .action((opts) => initProject(opts));
 
 program.command('dev')
-    .description('Development mode.')
+    .description('Development mode')
     .action(async () => {
         const root = '.';
         const dest = root + '/' + configs.outDir || '';
@@ -68,8 +62,6 @@ program.command('dev')
         let watcher = chokidar.watch(process.cwd() + '/' + serverDir);
 
         watcher.on('change', async (filename) => {
-            isChange = true;
-
             log.warn(filename + ' changed.');
             // Kill server
             log.warn('Kill old dev server and restart after 2000 milliseconds');
@@ -85,16 +77,11 @@ program.command('dev')
 
             await wait(1);
             require('./libs/browser-sync').reload();
-
-            isChange = false;
         });
-
-        await wait(1);
-        require('./libs/browser-sync');
     });
 
 program.command('build')
-    .description('Build project.')
+    .description('Build project')
     .action(() => build());
 
 program.parse(process.argv);
@@ -109,11 +96,11 @@ function outputHelp() {
     process.exit();
 }
 
-function initProject(cmd) {
+function initProject(opts) {
 
     const check = fs.existsSync('./src');
 
-    if (check && !cmd.force) {
+    if (check && !opts.force) {
         log.error('The `src` folder has already existed.');
         log.error('Use -f option to force run.');
         return;
@@ -126,7 +113,14 @@ function initProject(cmd) {
     fs.copyFileSync(__dirname + '/configs.sample.js', './configs.js');
 
     log.info('Create package.json ...');
-    fs.copyFileSync(__dirname + '/package.sample.json', './package.json');
+
+    if (typeof(opts.name) === 'string') {
+        let sample = require(__dirname + '/package.sample.json');
+            sample.name = opts.name;
+        fs.outputJSONSync('./package.json', sample, {spaces: 2});
+    } else {
+        fs.copyFileSync(__dirname + '/package.sample.json', './package.json');
+    }
 
     log.info('Create .gitignore ...');
     fs.copyFileSync(__dirname + '/gitignore.sample', './.gitignore');
@@ -134,11 +128,11 @@ function initProject(cmd) {
     log.info('Create .eslintrc.json ...');
     fs.copyFileSync(__dirname + '/.eslintrc.json', './.eslintrc.json');
 
-    log.warn('\nRemember to modify the `package.json` file!');
-    log.success('----------------------------------------');
-    log.success('  Done! Your project is ready to rock!  ');
-    log.success('----------------------------------------');
-    log.info('Please run `npm install` first.');
+    log.success(' ------------------------------------------ ');
+    log.success('|   Done! Your project is ready to rock!   |');
+    log.success(' ------------------------------------------ ');
+    log.warn('Please run `npm install` first.');
+    log.warn('Remember to modify the `package.json` file!');
     log.info('Run `s9tool dev` to development.');
     log.info('Run `s9tool build` to build your project.');
 }

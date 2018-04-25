@@ -15,7 +15,12 @@ async function development () {
     let dev = runApp();
     log.info('Server Started');
 
-    _webpack = webpack({production: false, server: dev});
+    _webpack = webpack({
+        production: false, server: dev
+    }, (err) => {
+        if (err) log.error(err);
+        process.send('reload');
+    });
 
     dev.listen(PORT);
     
