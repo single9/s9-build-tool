@@ -203,7 +203,7 @@ class WebpackLib {
             }
 
             this.compliers.push( compiler );
-            if (this.compliers.length >= webpackConfig.length && callback) callback(errs);
+            if ((this.compliers.length >= webpackConfig.length) && callback) callback(errs);
         }
     }
 

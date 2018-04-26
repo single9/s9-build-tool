@@ -59,25 +59,27 @@ program.command('dev')
             return instance;
         }
 
-        let watcher = chokidar.watch(process.cwd() + '/' + serverDir);
+        chokidar.watch(process.cwd() + '/' + serverDir)
+                .on('change', (filename) => restartServer(filename));
 
-        watcher.on('change', async (filename) => {
-            log.warn(filename + ' changed.');
+        chokidar.watch(process.cwd() + '/configs.js')
+                .on('change', (filename) => restartServer(filename));
+
+        async function restartServer (filename) {
+            log.warn(filename + ' has changed.');
             // Kill server
             log.warn('Kill old dev server and restart after 2000 milliseconds');
             let isKill = await devServer.kill('SIGINT');
 
             if (isKill) log.success('Server killed.');
-            else return log.error('Server failed to kill.');
+            else log.error('Server failed to kill.');
+
             // restart server
             await wait(2);
             devServer = server();
             
             log.success('The dev server is restarted.');
-
-            await wait(1);
-            require('./libs/browser-sync').reload();
-        });
+        }
     });
 
 program.command('build')
