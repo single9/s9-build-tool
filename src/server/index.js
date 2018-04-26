@@ -5,6 +5,7 @@ const express = require('express');
 const app = express();
 const log = require('./log-helper.js');
 
+const devMode = process.env.NODE_ENV !== 'production';
 // PORT
 const PORT = process.env.PORT || 3000;
 // ROOT Directory path
@@ -29,8 +30,8 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('*', (req, res, next) => {
-    if (req.url === '/__webpack_hmr') return next();
-    if (/\.hot-update/.test(req.url)) return next();
+    if (/(\.hot-update)|(\/__webpack_hmr)/.test(req.url)) return next();
+    if (devMode && /\.css|\.js/.test(req.url)) return next();
     res.status(404);
     next('404');
 });

@@ -9,7 +9,8 @@ const webpack = [
         },
         output: {
             path: path.resolve(__dirname, 'build/assets/js'),
-            filename: '[name].bundle.js'
+            filename: '[name].bundle.js',
+            publicPath: '/public/js'
         }
     }
 ];
