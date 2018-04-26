@@ -14,7 +14,9 @@ class NunjucksLib extends events {
 
         this.src = tplConfig.src;
         this.outdir = tplConfig.output;
-        this.njk = new nunjucks.Environment(new nunjucks.FileSystemLoader(this.src));
+        this.njk = new nunjucks.Environment(new nunjucks.FileSystemLoader(this.src, {
+            noCache: true
+        }));
 
         if (opts.watch === true) {
             this.recursiveWatch(this.src);

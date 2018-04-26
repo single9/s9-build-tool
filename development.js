@@ -42,8 +42,6 @@ function runApp() {
     return require(process.cwd() + '/src/server/index.js');
 }
 
-// process.stdin.resume();//so the program will not close instantly
-
 if (module.parent) {
     module.exports = development;
 } else {

@@ -59,12 +59,12 @@ function genConfigs (configs) {
     config.plugins = config.plugins.concat([
         new ProgressBarPlugin({
             format: 'Build [:bar] :percent (:elapsed seconds)',
-            clear: false,
+            clear: true,
         }),
         new MiniCssExtractPlugin({
             filename: '../css/[name].css',
-            chunkFilename: '../css/[id].css'
-        })
+            chunkFilename: '../css/[name].css'
+        }),
     ]);
 
     if(devMode) {
@@ -75,18 +75,23 @@ function genConfigs (configs) {
 
         for (let e in config.entry) {
             if (typeof(config.entry[e].push) === 'undefined') continue;
-            config.entry[e].push(__dirname + '/../node_modules/webpack-hot-middleware/client?path=/__webpack_hmr&timeout=2000&heartbeat=1000&reload=true');
+            config.entry[e].push(__dirname + '/../node_modules/webpack-hot-middleware/client?name='+ config.name +'&path=/__webpack_hmr_'+  config.name + '&timeout=5000&heartbeat=1000&reload=true');
         }
     } else {
-        config.optimization = {
+        config.performance = { 
+            hints: false     // disable warning
+        };
+
+        Object.assign(config.optimization, {
             minimizer: [
                 new UglifyJsPlugin({
                     cache: true,
-                    parallel: true
+                    parallel: true,
+                    sourceMap: true
                   }),
                 new OptimizeCSSAssetsPlugin({})
             ]
-        };
+        });
     }
 
     return config;
@@ -96,18 +101,25 @@ function genConfigs (configs) {
  * Configs Helper
  * 
  * @param {object} configs 
+ * @return {{
+        entry: any,
+        output: any,
+        resolve: any,
+        module: any,
+        plugins: [],
+        mode: string,
+        optimization: any
+    }}
  */
 function configsHelper (configs) {
-    return {
-        entry: configs.entry,
-        output: configs.output,
-        resolve: configs.resolve,
-        module: configs.module,
+
+    return Object.assign({
         /** @type Array */
-        plugins: configs.plugins || [],
+        plugins: [],
         /** @type String */
         mode: process.env.NODE_ENV || configs.mode || 'development',
-    };
+        optimization: {}
+    }, configs);
 }
 
 class WebpackLib {
@@ -122,6 +134,7 @@ class WebpackLib {
         this.watchers = [];
         this.isProduction = opts.production || false;
         this.server = opts.server || undefined;
+        this.WebpackHotMiddlewares = [];
 
         this.genCompilers(callback);
     }
@@ -161,6 +174,7 @@ class WebpackLib {
     genCompilers (callback) {
         this.compliers = [];
         const webpackConfig = require(process.cwd() + '/configs').webpack;
+        let errs = [];
 
         for (let i=0; i<webpackConfig.length; i++) {
             
@@ -173,48 +187,33 @@ class WebpackLib {
 
             if (this.server) {
 
-                compiler.run((err) => {
+                this.server.use(WebpackDevMiddleware(compiler, {
+                    logLevel: 'warn',
+                    publicPath: config.output.publicPath,
+                }));
 
-                    this.webpackDevMiddleware = WebpackDevMiddleware(compiler, {
-                        logLevel: 'warn',
-                        publicPath: config.output.publicPath
-                    });
-                    
-                    this.webpackHotMiddleware = WebpackHotMiddleware(compiler);
-
-                    this.server.use(this.webpackDevMiddleware);
-                    this.server.use(this.webpackHotMiddleware);
-
-                    if(callback) callback(err);
+                this.WebpackHotMiddlewares[i] = WebpackHotMiddleware(compiler, {
+                    name: config.name,
+                    path: '/__webpack_hmr_'+  config.name,
+                    timeout: 5000,
+                    heartbeat: 1000
                 });
+
+                this.server.use(this.WebpackHotMiddlewares[i]);
             }
 
             this.compliers.push( compiler );
+            if (this.compliers.length >= webpackConfig.length && callback) callback(errs);
         }
     }
 
-    reload (seconds=2) {
-        // Wait a few seconds and then notify client to reload page.
-        wait(seconds).then(() => {
-            if (!this.webpackHotMiddleware) return;
-
-            this.webpackHotMiddleware.publish({
-                name: 'server',
-                action: 'sync',
-                time: 0,
-                hash: 'wqwodihaofaoefa',
-                warnings: [],
-                errors: [],
-            });
-        });
-    }
-
     sendServerBuildingMessage () {
-        if (!this.webpackHotMiddleware) return;
-        
-        this.webpackHotMiddleware.publish({
-            action: 'building',
-            name: 'server file',
+        this.WebpackHotMiddlewares.forEach((middleware) => {
+            if (!middleware || !middleware.publish) return;
+            middleware.publish({
+                action: 'building',
+                name: 'server file',
+            });
         });
     }
 
@@ -242,17 +241,21 @@ function webpackListener (err, stats) {
     if (jsonStats.warnings.length > 0)
         log.warn(jsonStats.warnings);
 
-    // log.info(stats.toString({
-    //     chunks: false,  // Makes the build much quieter
-    //     colors: true    // Shows colors in the console
-    // }) + '\n');
+    if (process.env.NODE_ENV === 'production') {
+        log.info(stats.toString({
+            chunks: false,  // Makes the build much quieter
+            colors: true    // Shows colors in the console
+        }));
+    }
 }
+
 /**
+ * WebpackLib
  * 
- * 
- * @param {object} [opts={}] 
- * @param {boolean} [opts.production=false]   Production mode?
- * @returns 
+ * @param {object}    [opts={}] 
+ * @param {boolean}   [opts.production=false]   Production mode?
+ * @param {function([]):void}  callback         Callback function
+ * @returns WebpackLib
  */
 module.exports = function (opts, callback) {
     return new WebpackLib(opts, callback);
