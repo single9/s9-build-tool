@@ -124,6 +124,11 @@ When development server is ready, your browser will auto-open immediately.
 
 You will get a new folder named `build`. This folder contains all your project need.
 
+Snapshoot
+---------
+
+![](https://i.imgur.com/4f6pqGb.png)
+
 Commands
 ---------
 
