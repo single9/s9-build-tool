@@ -49,11 +49,11 @@ class NunjucksLib extends events {
 
         this.njk.render(tplFile.file, tplFile.render, (err, res) => {
 
-            if (err) return this.sendMessage({err, fileName});
-
             let fileName = tplFile.name + '.html';
             let filePath = path.join(this.outdir, fileName);
         
+            if (err) return this.sendMessage({err, fileName});
+            
             fs.writeFile(filePath, res, (err) => {
                 if (err) this.sendMessage({err, fileName});
             });
