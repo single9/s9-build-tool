@@ -75,7 +75,7 @@ program.command('dev')
             else log.error('Server failed to kill.');
 
             // restart server
-            await wait(2);
+            await wait(1);
             devServer = server();
             
             log.success('The dev server is restarted.');

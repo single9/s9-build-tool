@@ -16,7 +16,10 @@ class NunjucksLib extends events {
         this.outdir = tplConfig.output;
         this.njk = new nunjucks.Environment(new nunjucks.FileSystemLoader(this.src, {
             noCache: true
-        }));
+        }), {
+            trimBlocks: true,
+            lstripBlocks: true
+        });
 
         if (opts.watch === true) {
             this.recursiveWatch(this.src);
