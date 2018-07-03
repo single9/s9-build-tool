@@ -29,12 +29,12 @@ program.command('init')
 
 program.command('dev')
     .description('Development mode')
-    .action(async () => {
+    .action(() => {
         const root = '.';
         const dest = root + '/' + configs.outDir || '';
 
         log.info('Empty `build` dir.');
-        await fs.emptyDirSync(dest);
+        fs.emptyDirSync(dest);
 
         let devServer = server();
 
