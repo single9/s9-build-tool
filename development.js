@@ -53,14 +53,14 @@ if (module.parent) {
                 _webpack.sendServerBuildingMessage();
                 await wait(1);
             }
-            if (err) console.log(err.stack);
+            if (err !== undefined) console.log(err);
             if (options.exit) process.exit();
         }
         
         //do something when app is closing
-        process.on('exit', exitHandler.bind(null,{cleanup:true}));
+        process.on('exit', exitHandler.bind(null,{cleanup: true}));
         
         //catches ctrl+c event
-        process.on('SIGINT', exitHandler.bind(null, {cleanup:true, exit:true}));
+        process.on('SIGINT', exitHandler.bind(null, {cleanup: false, exit: true}));
     })();
 }

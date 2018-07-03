@@ -33,8 +33,8 @@ program.command('dev')
         const root = '.';
         const dest = root + '/' + configs.outDir || '';
 
-        log.info('Remove `build` dir.');
-        await fs.remove(dest);
+        log.info('Empty `build` dir.');
+        await fs.emptyDirSync(dest);
 
         let devServer = server();
 
@@ -130,37 +130,40 @@ function initProject(opts) {
     log.info('Create .eslintrc.json ...');
     fs.copyFileSync(__dirname + '/.eslintrc.json', './.eslintrc.json');
 
-    log.success(' ------------------------------------------ ');
-    log.success('|   Done! Your project is ready to rock!   |');
-    log.success(' ------------------------------------------ ');
-    log.warn('Please run `npm install` first.');
-    log.warn('Remember to modify the `package.json` file!');
-    log.info('Run `s9tool dev` to development.');
-    log.info('Run `s9tool build` to build your project.');
+    log.info('Installing NPM packages...');
+
+    child.exec('npm i', (err) => {
+        if (err) return log.error('Install NPM packages fail.');
+
+        log.success(' ------------------------------------------ ');
+        log.success('|   Done! Your project is ready to rock!   |');
+        log.success(' ------------------------------------------ ');
+        log.warn('Remember to modify the `package.json` file!');
+        log.info('Use `s9tool dev` for development.');
+        log.info('Use `s9tool build` for build project.');
+    });
 }
 
-async function build(outDir=undefined) {
+function build(outDir=undefined) {
     process.env.NODE_ENV = 'production';
     
     const root = '.';
     const src = root + '/' + configs.rootDir;
     const dest = root + '/' + (outDir || configs.outDir);
     
-    log.info('Remove `build` dir.');
-    await fs.remove(dest);
-
-    await wait(2);
+    log.info('Empty `build` dir.');
+    fs.emptyDirSync(dest);
 
     log.info('Copy server files to `build`');
-    await fs.copySync(src, dest);
+    fs.copySync(src, dest);
 
     if (fs.existsSync(src + '/../../package.json')) {
         log.info('Copy package.json to `buid` folder.');
-        await fs.copySync(src + '/../../package.json', dest + '/package.json');
+        fs.copySync(src + '/../../package.json', dest + '/package.json');
     }
     
     log.info('Building views...');
 
     nunjucks({watch: false});
     webpack({production: true}).build();
-}
+}   
