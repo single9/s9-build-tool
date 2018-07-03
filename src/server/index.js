@@ -37,10 +37,7 @@ app.get('*', (req, res, next) => {
 });
 
 // Error Handler
-app.use((err, req, res, next) => {
-    res.send(err);
-    next();
-});
+app.use(require('./models/error'));
 
 if (module.parent) {
     module.exports = app;
