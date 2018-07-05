@@ -5,6 +5,7 @@ const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const log = require('./log');
 const wait = require('./utils').wait;
 
@@ -18,13 +19,13 @@ function genConfigs (configs) {
             {
                 test: /\.js$/,
                 exclude: function(modulePath) {
-                    return /node_modules/.test(modulePath);
+                    return /node_modules/.test(modulePath) && !/\.vue\.js/.test(modulePath);
                 },
                 use: {
                     loader: 'babel-loader',
                     options: {
                         presets: ['babel-preset-env']
-                    }
+                    },
                 }
             },
             {
@@ -43,6 +44,7 @@ function genConfigs (configs) {
                 test: /\.less$/,
                 use: [
                     devMode? 'style-loader' : MiniCssExtractPlugin.loader,
+                    'vue-style-loader',
                     'css-loader',
                     'less-loader'
                 ]
@@ -65,6 +67,7 @@ function genConfigs (configs) {
             filename: '../css/[name].css',
             chunkFilename: '../css/[name].css'
         }),
+        new VueLoaderPlugin(),
     ]);
 
     if(devMode) {
